@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Examination System</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; padding: 20px; }
+        .hidden { display: none; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0 20px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { background: #2c3e50; color: #fff; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #1a252f; }
+        #timer { font-size: 24px; font-weight: bold; color: #e74c3c; text-align: right; margin-bottom: 20px; }
+        .question-card { background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .question-card h3 { margin-bottom: 12px; font-size: 16px; }
+        .option { display: block; margin: 8px 0; cursor: pointer; font-size: 15px; }
+        .option input { margin-right: 8px; }
+        .score-box { background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+        .result-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 16px; }
+        .result-row:last-child { border-bottom: none; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        @media print { button { display: none; } }
+    </style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div class="container" id="startScreen">
+    <h1>Data Analysis Examination</h1>
+   <p>Examination Malpractice is corruption, do not practice!</p><br>
+   <p> This exam is being timed for 30 minutes, and the pass mark is 50%, give it your very best.</p>
+   <p>Upon successful completion of the test make sure you download the result and share to your instructure on any social media handle</p><br>
+    <p>Enter your full name to begin the examination.</p>
+    <input type="text" id="studentName" placeholder="Enter your full name">
+    <button onclick="startExam()">Start Examination</button>
+</div>
+
+<!-- EXAM SCREEN -->
+<div class="container hidden" id="examScreen">
+    <h1>Data Analysis with Excel — Examination</h1>
+    <p>Student: <strong id="displayName"></strong></p>
+    <div id="timer">30:00</div>
+    <div id="questionContainer"></div>
+    <button onclick="submitExam()">Submit Examination</button>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="container hidden" id="resultScreen">
+    <h1>Protospring Academy</h1>
+    <p><center> Result Slip</center></p>
+    <div id="resultContent"></div>
+    <button onclick="downloadResult()">Download / Print Result</button>
+</div>
+
+<script>
+
+// ===============================
+// CBT EXAMINATION SYSTEM
+// ===============================
+
+let studentName = "";
+let currentTime = 1800; // 30 Minutes
+let timerInterval;
+
+// ====================================
+// QUESTION BANK
+// ====================================
+
+const questions = [
+
+    {
+        question: "What is data analysis?",
+        options: [
+            "The process of deleting data",
+            "The process of inspecting and interpreting data",
+            "The process of printing reports",
+            "The process of creating charts only"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which of the following is an example of quantitative data?",
+        options: [
+            "Gender",
+            "Department",
+            "Salary",
+            "Nationality"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which industry commonly uses data analysis for fraud detection?",
+        options: [
+            "Banking",
+            "Agriculture",
+            "Construction",
+            "Transportation"
+        ],
+        answer: 0
+    },
+    {
+        question: "What is the intersection of a row and column called in Excel?",
+        options: [
+            "Sheet",
+            "Range",
+            "Cell",
+            "Table"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which Excel component displays the content of the selected cell?",
+        options: [
+            "Ribbon",
+            "Formula Bar",
+            "Status Bar",
+            "Quick Access Toolbar"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which file extension is the default Excel workbook format?",
+        options: [
+            ".docx",
+            ".pptx",
+            ".xlsx",
+            ".csv"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which shortcut is used to undo an action in Excel?",
+        options: [
+            "Ctrl + Y",
+            "Ctrl + C",
+            "Ctrl + Z",
+            "Ctrl + V"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which feature allows Excel to automatically continue a sequence?",
+        options: [
+            "Freeze Panes",
+            "AutoFill",
+            "Sort",
+            "Filter"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which formatting option combines multiple cells into one?",
+        options: [
+            "Wrap Text",
+            "Merge and Center",
+            "Conditional Formatting",
+            "AutoFit"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which Excel view keeps row headers visible while scrolling?",
+        options: [
+            "Zoom",
+            "Split",
+            "Freeze Panes",
+            "Page Layout"
+        ],
+        answer: 2
+    },
+    {
+        question: "What symbol must every Excel formula begin with?",
+        options: [
+            "#",
+            "=",
+            "&",
+            "%"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which operator is used for multiplication in Excel?",
+        options: [
+            "x",
+            "+",
+            "*",
+            "/"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which function adds a range of numbers together?",
+        options: [
+            "AVERAGE",
+            "COUNT",
+            "SUM",
+            "MAX"
+        ],
+        answer: 2
+    },
+    {
+        question: "What does the AVERAGE function do?",
+        options: [
+            "Finds the highest value",
+            "Finds the lowest value",
+            "Calculates the mean value",
+            "Counts entries"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which function returns the largest value in a range?",
+        options: [
+            "MAX",
+            "MIN",
+            "COUNT",
+            "SUM"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which function counts non-empty cells?",
+        options: [
+            "COUNT",
+            "COUNTA",
+            "SUM",
+            "AVERAGE"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which reference remains fixed when copied?",
+        options: [
+            "Relative Reference",
+            "Mixed Reference",
+            "Absolute Reference",
+            "Dynamic Reference"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which symbol is used in an absolute cell reference?",
+        options: [
+            "&",
+            "#",
+            "@",
+            "$"
+        ],
+        answer: 3
+    },
+    {
+        question: "What is the purpose of the IF function?",
+        options: [
+            "Perform conditional testing",
+            "Count records",
+            "Sort data",
+            "Create charts"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which function returns TRUE only when all conditions are true?",
+        options: [
+            "IF",
+            "OR",
+            "AND",
+            "NOT"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which function combines text strings together?",
+        options: [
+            "MID",
+            "CONCAT",
+            "LEN",
+            "TRIM"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which function removes extra spaces from text?",
+        options: [
+            "LEN",
+            "TRIM",
+            "LEFT",
+            "RIGHT"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which function returns the current date?",
+        options: [
+            "NOW",
+            "DATE",
+            "TODAY",
+            "TIME"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which function returns both current date and time?",
+        options: [
+            "NOW",
+            "TODAY",
+            "YEAR",
+            "MONTH"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which lookup function is considered a modern replacement for VLOOKUP?",
+        options: [
+            "INDEX",
+            "MATCH",
+            "XLOOKUP",
+            "SUMIFS"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which function helps handle errors gracefully?",
+        options: [
+            "IFERROR",
+            "SUM",
+            "COUNT",
+            "AVERAGE"
+        ],
+        answer: 0
+    },
+    {
+        question: "What is data cleaning?",
+        options: [
+            "Deleting all records",
+            "Removing worksheets",
+            "Correcting and preparing data",
+            "Creating charts"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which of the following is a common data quality issue?",
+        options: [
+            "Conditional Formatting",
+            "Duplicate Records",
+            "PivotTables",
+            "Sparklines"
+        ],
+        answer: 1
+    },
+    {
+        question: "What is a duplicate record?",
+        options: [
+            "A missing value",
+            "A repeated entry",
+            "A chart type",
+            "A formula error"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which Excel tool removes duplicate records automatically?",
+        options: [
+            "Sort",
+            "Filter",
+            "Remove Duplicates",
+            "Goal Seek"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which feature helps identify blank cells quickly?",
+        options: [
+            "Go To Special",
+            "PivotTable",
+            "Goal Seek",
+            "Name Manager"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which function removes non-printable characters from text?",
+        options: [
+            "TRIM",
+            "CLEAN",
+            "PROPER",
+            "LOWER"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which function converts text to uppercase?",
+        options: [
+            "UPPER",
+            "LOWER",
+            "PROPER",
+            "TRIM"
+        ],
+        answer: 0
+    },
+    {
+        question: "What is the purpose of Data Validation?",
+        options: [
+            "Create charts",
+            "Restrict invalid data entry",
+            "Delete duplicates",
+            "Print worksheets"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which Data Validation type creates a drop-down list?",
+        options: [
+            "Date",
+            "Whole Number",
+            "List",
+            "Decimal"
+        ],
+        answer: 2
+    },
+    {
+        question: "Sorting data A to Z is called:",
+        options: [
+            "Filtering",
+            "Descending",
+            "Ascending",
+            "Grouping"
+        ],
+        answer: 2
+    },
+    {
+        question: "What is filtering used for?",
+        options: [
+            "Delete data",
+            "Display specific records",
+            "Create formulas",
+            "Print reports"
+        ],
+        answer: 1
+    },
+    {
+        question: "Conditional Formatting is used to:",
+        options: [
+            "Create worksheets",
+            "Highlight data based on rules",
+            "Rename tables",
+            "Merge cells"
+        ],
+        answer: 1
+    },
+    {
+        question: "A clean dataset should contain:",
+        options: [
+            "Duplicate records",
+            "Blank headers",
+            "Consistent formatting",
+            "Merged cells"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which feature automatically formats and manages structured data?",
+        options: [
+            "Excel Table",
+            "Chart",
+            "Formula Bar",
+            "Freeze Panes"
+        ],
+        answer: 0
+    },
+    {
+        question: "What is an Excel Table?",
+        options: [
+            "A chart",
+            "A structured range of data",
+            "A formula",
+            "A worksheet"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which shortcut creates an Excel Table?",
+        options: [
+            "Ctrl + S",
+            "Ctrl + T",
+            "Ctrl + P",
+            "Ctrl + Z"
+        ],
+        answer: 1
+    },
+    {
+         question: "One advantage of Excel Tables is:",
+        options: [
+            "Automatic expansion",
+            "Automatic printing",
+            "Automatic emailing",
+            "Automatic backups"
+        ],
+        answer: 0
+    },
+    {
+        question: "What are structured references?",
+        options: [
+            "Using table column names in formulas",
+            "Using only row numbers",
+            "Using chart names",
+            "Using worksheet tabs"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which formula uses a structured reference?",
+        options: [
+            "=SUM(A1:A20)",
+            "=SUM(Sales_Data[Sales])",
+            "=A1+B1",
+            "=MAX(B2:B10)"
+        ],
+        answer: 1
+    },
+    {
+        question: "What is a Named Range?",
+        options: [
+            "A named worksheet",
+            "A descriptive name assigned to cells",
+            "A chart title",
+            "A filter option"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which tab contains the Define Name command?",
+        options: [
+            "Insert",
+            "Home",
+            "Formulas",
+            "Data"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which of the following is a valid Named Range?",
+        options: [
+            "123Sales",
+            "Monthly Sales",
+            "Sales_Data",
+            "Sales-Data"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which tool manages all Named Ranges?",
+        options: [
+            "Goal Seek",
+            "PivotTable",
+            "Name Manager",
+            "Sort"
+        ],
+        answer: 2
+    },
+    {
+        question: "What is a Dynamic Range?",
+        options: [
+            "A range that updates automatically",
+            "A chart type",
+            "A worksheet style",
+            "A filter setting"
+        ],
+        answer: 0
+    },
+    {
+        question: "What is data visualization?",
+        options: [
+            "Deleting data",
+            "Formatting worksheets",
+            "Graphical representation of data",
+            "Protecting files"
+        ],
+        answer: 2
+    },
+    {
+        question: "Which chart is best for showing trends over time?",
+        options: [
+            "Pie Chart",
+            "Line Chart",
+            "Bar Chart",
+            "Doughnut Chart"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which chart is commonly used to compare categories?",
+        options: [
+            "Column Chart",
+            "Scatter Plot",
+            "Area Chart",
+            "Radar Chart"
+        ],
+        answer: 0
+    },
+    {
+        question: "Which chart shows parts of a whole?",
+        options: [
+            "Line Chart",
+            "Pie Chart",
+            "Scatter Plot",
+            "Histogram"
+        ],
+        answer: 1
+    },
+    {
+        question: "What is the main purpose of a Scatter Plot?",
+        options: [
+            "Show percentages",
+            "Compare categories",
+            "Show relationships between variables",
+            "Display totals"
+        ],
+        answer: 2
+    },
+    {
+        question: "What is a Combo Chart?",
+        options: [
+            "A chart combining multiple chart types",
+            "A chart with no axes",
+            "A chart for percentages only",
+            "A chart for dates only"
+        ],
+        answer: 0
+    },
+    {
+        question: "What are Sparklines?",
+        options: [
+            "Worksheet themes",
+            "Mini charts within cells",
+            "Table styles",
+            "Filter buttons"
+        ],
+        answer: 1
+    },
+    {
+        question: "What is a dashboard?",
+        options: [
+            "A workbook password",
+            "A visual display of key information",
+            "A worksheet tab",
+            "A chart legend"
+        ],
+        answer: 1
+    },
+    {
+        question: "Which dashboard component displays key metrics such as Total Sales?",
+        options: [
+            "Gridlines",
+            "KPI Cards",
+            "Headers",
+            "Comments"
+        ],
+        answer: 1
+    },
+    {
+        question: "What is data storytelling?",
+        options: [
+            "Writing formulas",
+            "Printing reports",
+            "Communicating insights using data and visuals",
+            "Creating worksheets"
+        ],
+        answer: 2
+    }
+
+];
+
+// ====================================
+// START EXAM
+// ====================================
+
+function startExam() {
+    studentName = document.getElementById("studentName").value.trim();
+
+    if (studentName === "") {
+        alert("Please enter your name.");
+        return;
+    }
+
+    document.getElementById("displayName").textContent = studentName;
+    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("examScreen").classList.remove("hidden");
+
+    renderQuestions();
+    startTimer();
+}
+
+// ====================================
+// RENDER QUESTIONS
+// ====================================
+
+function renderQuestions() {
+    const container = document.getElementById("questionContainer");
+    container.innerHTML = "";
+
+    questions.forEach((question, index) => {
+        const card = document.createElement("div");
+        card.classList.add("question-card");
+
+        let html = `<h3>${index + 1}. ${question.question}</h3>`;
+
+        question.options.forEach((option, i) => {
+            html += `
+                <label class="option">
+                    <input type="radio" name="question${index}" value="${i}">
+                    ${option}
+                </label>
+            `;
+        });
+
+        card.innerHTML = html;
+        container.appendChild(card);
+    });
+}
+
+// ====================================
+// TIMER
+// ====================================
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        currentTime--;
+
+        let minutes = Math.floor(currentTime / 60);
+        let seconds = currentTime % 60;
+
+        if (seconds < 10) seconds = "0" + seconds;
+
+        document.getElementById("timer").textContent = `${minutes}:${seconds}`;
+
+        if (currentTime <= 0) {
+            clearInterval(timerInterval);
+            alert("Time is up. Examination will be submitted automatically.");
+            submitExam();
+        }
+    }, 1000);
+}
+
+// ====================================
+// SUBMIT EXAM
+// ====================================
+
+function submitExam() {
+    clearInterval(timerInterval);
+
+    let score = 0;
+
+    questions.forEach((question, index) => {
+        const selected = document.querySelector(`input[name="question${index}"]:checked`);
+        if (selected && parseInt(selected.value) === question.answer) {
+            score++;
+        }
+    });
+
+    generateResult(score);
+}
+
+// ====================================
+// GRADE SYSTEM
+// ====================================
+
+function calculateGrade(percent) {
+    if (percent >= 70) return "A";
+    if (percent >= 60) return "B";
+    if (percent >= 50) return "C";
+    if (percent >= 45) return "D";
+    if (percent >= 40) return "E";
+    return "F";
+}
+
+// ====================================
+// RESULT PAGE
+// ====================================
+
+function generateResult(score) {
+    document.getElementById("examScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.remove("hidden");
+
+    const totalQuestions = questions.length;
+    const percentage = ((score / totalQuestions) * 100).toFixed(2);
+    const grade = calculateGrade(percentage);
+    const status = percentage >= 50 ? "PASS" : "FAIL";
+    const statusClass = percentage >= 50 ? "pass" : "fail";
+
+    const resultHTML = `
+        <div class="score-box">
+            <div class="result-row">
+                <strong>Student Name:</strong>
+                <span>${studentName}</span>
+            </div>
+            <div class="result-row">
+                <strong>Course Title: </strong>
+                Data Analysis with Excel
+            </div>
+             <div class="result-row">
+                <strong>Total Questions:</strong>
+                <span>${totalQuestions}</span>
+            </div>
+            <div class="result-row">
+                <strong>Score:</strong>
+                <span>${score}</span>
+            </div>
+            <div class="result-row">
+                <strong>Percentage:</strong>
+                <span>${percentage}%</span>
+            </div>
+            <div class="result-row">
+                <strong>Grade:</strong>
+                <span>${grade}</span>
+            </div>
+            <div class="result-row">
+                <strong>Status:</strong>
+                <span class="${statusClass}">${status}</span>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("resultContent").innerHTML = resultHTML;
+}
+
+// ====================================
+// DOWNLOAD RESULT
+// ====================================
+
+function downloadResult() {
+    window.print();
+}
+
+// ====================================
+// SHUFFLE QUESTIONS (OPTIONAL)
+// ====================================
+
+function shuffleQuestions() {
+    for (let i = questions.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+    }
+}
+
+// Uncomment below to randomise question order each attempt:
+shuffleQuestions();
+
+</script>
+</body>
+</html>
